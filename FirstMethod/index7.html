@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width,initial-scale=1,minimum-scale=1,maximum-scale=1,user-scalable=no" />		
+		<title>星级评分7-点亮星星之终极版</title>
+		<script src="http://apps.bdimg.com/libs/jquery/2.1.4/jquery.js" type="text/javascript" charset="utf-8"></script>
+		<style type="text/css">
+			html, body, ul, li {
+				margin: 0;
+				padding: 0;
+			}
+			li {
+				list-style-type: none;
+				float: left;
+			}
+			ul {
+				width: 210px;
+				margin: 100px auto;
+				*zoom: 1;
+			}
+			ul:after {
+				content: "";
+				display: block;
+				clear: both;
+				
+			}
+			.rating-item {
+				width: 35px;
+				height: 35px;
+				background: url('http://i.niupic.com/images/2017/05/31/iVPGGC.png') no-repeat;
+				cursor: pointer;
+			}
+			
+			
+		</style>
+	</head>
+	<body>
+		<div class="wrap">
+			<!--星级评分第一种实现方式-->
+			<ul id="rating" class="rating">
+				<li class="rating-item" title="很不好"></li>
+				<li class="rating-item" title="不好"></li>
+				<li class="rating-item" title="一般"></li>
+				<li class="rating-item" title="好"></li>
+				<li class="rating-item" title="很好"></li>
+			</ul>
+			<ul id="rating2" class="rating">
+				<li class="rating-item" title="很不好"></li>
+				<li class="rating-item" title="不好"></li>
+				<li class="rating-item" title="一般"></li>
+				<li class="rating-item" title="好"></li>
+				<li class="rating-item" title="很好"></li>
+			</ul>
+			
+		</div>
+		<script type="text/javascript">
+			var rating = (function () {
+//				自我执行函数，避免全局变量的污染
+				
+				
+//				lightEntire.prototype = new light();//lightEntire继承父类light的所有内容，包括构造函数和方法。
+//				new lightEntire();//这是原型链的继承，一继承就会执行构造函数，这样的继承不好，因为要是父类的构造函数非常多的话，就会影响性能，最好的继承是，只继承父类的方法，而不继承父类的构造函数。
+				
+				//继承方法：
+				var extend = function (subClass, superClass) {
+					var F = function () {};
+					F.prototype = superClass.prototype;
+					subClass.prototype = new F();
+					subClass.prototype.constructor = subClass
+				};
+				
+				//点亮(父类)
+				var light = function (el, options) {
+					this.$el = $(el);
+					this.$item = this.$el.find(".rating-item");
+					this.opts = options;
+					this.add = 1;
+					this.selectEvent = "mouseover";
+					
+				};
+				
+				//点亮整颗星星初始化原型方法，避免在对象里调用，造成内存的浪费。在这里只会调用一次。
+				light.prototype.init = function () {
+					this.lightOn(this.opts.num);//点亮星星的颗数
+					if (!this.opts.readOnly) {
+						this.bindEvent();//绑定事件
+					}
+				};
+				
+				light.prototype.lightOn = function (num) {
+					num = parseInt(num);
+					this.$item.each(function(index){
+						if (index < num) {
+							$(this).css("background-position","0 -35px");
+						} else{
+							$(this).css("background-position","0 0");
+							
+						}
+					})
+					
+				};
+				
+				light.prototype.bindEvent = function () {
+					var self = this,
+						itemLength = self.$item.length;
+					self.$el.on(self.selectEvent, ".rating-item",function(e){
+						var num = 0,
+							$this = $(this);
+						
+						self.select(e, $this);
+						num = $(this).index() + self.add
+						self.lightOn(num);
+						
+//						(typeof(self.opts.select)==="function") && self.opts.select(num, itemLength);//此时this指向的是lightEntire这个对象；
+						(typeof(self.opts.select)==="function") && self.opts.select.call(this, num, itemLength);//此时this指向的是当前执行这个事件的这个li元素。
+						
+						self.$el.trigger('select', [num, itemLength]);//jq自定义事件
+					}).on("click", ".rating-item", function() {
+						self.opts.num = $(this).index() + self.add;
+						(typeof(self.opts.chosen)==="function") && self.opts.chosen.call(this, self.opts.num, itemLength);//此时this指向的是当前执行这个事件的这个li元素。
+						self.$el.trigger('chosen', [self.opts.num, itemLength]);//jq自定义事件
+						
+					}).on("mouseout", function() {
+						self.lightOn(self.opts.num);
+					});
+				};
+				
+				light.prototype.select =  function () {
+					throw new Error('子类必须重写此方法！');
+				}
+				light.prototype.unbindEvent = function () {
+					this.$el.off();
+				}
+				
+//				-----------------------------------------------------------------------------------------------
+
+				//点亮整颗
+				var lightEntire = function (el, options) {
+					light.call(this, el, options);//继承父类的构造函数的内容，此时this指向lightEntire;
+					this.selectEvent = "mouseover";
+				}
+				
+				extend(lightEntire, light);
+				
+				lightEntire.prototype.lightOn = function (num) {
+					light.prototype.lightOn.call(this, num);
+					
+				}
+				
+				//重写父类的select()
+				lightEntire.prototype.select = function () {
+					self.add  = 1;
+				}
+				
+//	----------------------------------------------------------------------------------------------------------			
+				
+				//点亮半颗颗
+				var lightHalf = function (el, options) {
+					light.call(this, el, options);//继承父类的构造函数内容，此时this指向lightEntire;
+					this.selectEvent = "mousemove"
+				}
+				
+				extend(lightHalf, light);
+				
+				lightHalf.prototype.lightOn = function (num) {
+					var count = parseInt(num),
+						isHalf = count !== num;
+					light.prototype.lightOn.call(this, count);
+					
+					if (isHalf) {
+						this.$item.eq(count).css("background-position", "0 -75px");
+					} else{
+						
+					}
+					
+				}
+				
+				//重写父类的select()
+				lightHalf.prototype.select = function (e, $this) {
+					if (e.pageX - $this.offset().left < $this.width()/2) {
+						this.add = 0.5;
+					} else{
+						this.add = 1;
+					}
+				}
+				
+				
+
+//				----------------------------------------------------------------------------------------------
+				
+//				公共部分
+				//默认参数
+				var defaults = {
+					mode: 'lightEntire',
+					num: 0,
+					readOnly: false,//是否只读
+					select: function () {//鼠标移动时候的，选择星星
+					 	
+					},
+					chosen: function () {//随便点击时候，选择的星星
+						
+					}
+				}
+				
+				var mode = {
+					"lightEntire":lightEntire,
+					"lightHalf": lightHalf
+				}
+				
+				//初始化
+				var init = function (el, option) {
+					var $el = $(el), 
+						rating = $(el).data('rating'),
+						options = $.extend({}, defaults, typeof option === "object" && option);//options对象覆盖defaults对象的内容，并把覆盖后的defaults对象赋值给{}；
+//					new lightHalf(el, options).init();
+					if (!mode[options.mode]) {
+						options.mode = "lightEntire";
+					}
+					if (!rating) {
+						
+						$el.data('rating', (rating = new mode[options.mode](el, options)));//在元素上存放或读取数据,返回jQuery对象。设置rating的值为(rating = new mode[options.mode](el, options))
+						rating.init();
+					}
+					
+					//如果是字符串
+					if (typeof option === "string") rating[option]()
+					
+					
+				}
+				
+				//jq插件
+				$.fn.extend({
+					rating: function (option) {
+						init(this, option);
+					}
+				})
+				
+				return {
+					init:init
+				}
+			})()
+			
+			//jq调用
+			$("#rating").rating({
+				mode: 'lightEntire',
+				num: 2
+			})
+			
+			$("#rating2").rating({
+				mode: 'lightHalf',
+				num: 2.5
+			})
+			
+			$("#rating2").on("chosen", function () {
+				$("#rating2").rating("unbindEvent");
+			})
+			
+			
+//			//调用
+//			rating.init("#rating", {
+//				mode: "111",
+//				num:2.5,
+//				chosen: function (num, total) {
+//					console.log(num+"/"+total);
+//					
+//					rating.init("#rating", "unbindEvent");
+//				}
+//				select: function(num, total) {
+//					console.log(this);
+//					console.log(num+"/"+total);
+//				},
+//				chosen: function(num, total) {
+//					console.log(this);
+//					console.log(num+"/"+total);
+//				}
+
+//			})
+//			$("#rating").on("select", function (event, num, total) {//调用jq自定义函数时候,注意第一参数一定要是event,
+//				console.log(num+"/"+total);
+//			}).on("chosen", function (event, num, total) {
+//				console.log(num+"/"+total);
+//			})
+			
+			//只读星星
+			
+			rating.init("#rating2", {
+				num: 3,
+				readOnly: true
+			})
+			
+			
+			
+			
+		</script>
+	</body>
+</html>
