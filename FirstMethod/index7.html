@@ -37,6 +37,8 @@
 	</head>
 	<body>
 		<div class="wrap">
+			<button type="button" id="btn">提交</button>
+			
 			<!--星级评分第一种实现方式-->
 			<ul id="rating" class="rating">
 				<li class="rating-item" title="很不好"></li>
@@ -251,10 +253,12 @@
 				mode: 'lightHalf',
 				num: 2.5
 			})
-			
-			$("#rating2").on("chosen", function () {
-				$("#rating2").rating("unbindEvent");
+			$("#btn").on("click", function () {
+//				$("#rating2").on("chosen", function () {
+					$("#rating2").rating("unbindEvent");
+//				})
 			})
+			
 			
 			
 //			//调用
